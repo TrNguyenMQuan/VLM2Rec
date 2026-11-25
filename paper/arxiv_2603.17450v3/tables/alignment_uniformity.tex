@@ -1,0 +1,57 @@
+% % !TeX root = ../main.tex
+% \begin{table}[!t]
+% \centering
+% \caption{VLM geometry: uniformity $U$ and separability $S$.}
+% \label{tab:ali_uni_clo}
+% \setlength{\tabcolsep}{3pt}
+% \renewcommand{\arraystretch}{0.95}
+% \begin{tabular}{@{}lllrrr@{}}
+% \toprule
+% \textbf{Dataset} & \textbf{Metric} & \textbf{Mod.} & \textbf{Vanilla} & \textbf{SFT} & \textbf{Ours} \\
+% \midrule
+% \multirow{6}{*}{\textbf{Beauty}}
+%  & \multirow{3}{*}{$U$ ($\downarrow$)} & Fused & -0.3984 & -1.7969 & -1.9921 \\
+%  & & Vision & \textbf{-0.0237} & -0.0398 & \textcolor{blue}{\textbf{-0.2031}} \\
+%  & & Text & -0.3691 & -1.7422 & -1.6718 \\
+% \cmidrule(l){2-6}
+%  & \multirow{3}{*}{$S$ ($\uparrow$)} & Fused & 1.0340 & 1.1910 & 1.1870 \\
+%  & & Vision & \textbf{1.0071} & \textcolor{red}{\textbf{1.0000}} & \textcolor{blue}{\textbf{1.2134}} \\
+%  & & Text & 1.0381 & 1.1887 & 1.1639 \\
+% \midrule
+% \multirow{6}{*}{\textbf{MovieLens}}
+%  & \multirow{3}{*}{$U$ ($\downarrow$)} & Fused & -0.2275 & -0.8203 & -4.6562 \\
+%  & & Vision & \textbf{-0.0236} & \textcolor{red}{\textbf{-0.0078}} & \textcolor{blue}{\textbf{-1.7187}} \\
+%  & & Text & -0.2177 & -0.7891 & -1.1788 \\
+% \cmidrule(l){2-6}
+%  & \multirow{3}{*}{$S$ ($\uparrow$)} & Fused & 1.0117 & 1.2471 & 1.2263 \\
+%  & & Vision & \textbf{1.0035} & \textcolor{red}{\textbf{0.9998}} & \textcolor{blue}{\textbf{1.1134}} \\
+%  & & Text & 1.0118 & 1.0116 & 1.1135 \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+\begin{table}[!t]
+\centering
+\caption{VLM geometry: uniformity $U$ and separability $S$.}
+\label{tab:ali_uni_clo}
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{0.7}
+\resizebox{0.95\columnwidth}{!}{%
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+\multirow{2}{*}{\textbf{Dataset}} & \multirow{2}{*}{\textbf{Mod.}} & \multicolumn{3}{c}{$U$ ($\downarrow$)} & \multicolumn{3}{c}{$S$ ($\uparrow$)} \\
+\cmidrule(lr){3-5}\cmidrule(l){6-8}
+ & & $\text{VLM}_{\text{Vanilla}}$ & $\text{VLM}_{\text{SFT}}$ & \textbf{Ours} & $\text{VLM}_{\text{Vanilla}}$ & $\text{VLM}_{\text{SFT}}$ & \textbf{Ours} \\
+\midrule
+\multirow{3}{*}{\textbf{Beauty}}
+ & Fused & -0.3984 & -1.7969 & -1.9921 & 1.0340 & 1.1910 & 1.1870 \\
+ & Vision & \textbf{-0.0237} & -0.0398 & \textcolor{blue}{\textbf{-0.2031}} & \textbf{1.0071} & \textcolor{red}{\textbf{1.0000}} & \textcolor{blue}{\textbf{1.2134}} \\
+ & Text & -0.3691 & -1.7422 & -1.6718 & 1.0381 & 1.1887 & 1.1639 \\
+\midrule
+\multirow{3}{*}{\textbf{MovieLens}}
+ & Fused & -0.2275 & -0.8203 & -4.6562 & 1.0117 & 1.2471 & 1.2263 \\
+ & Vision & \textbf{-0.0236} & \textcolor{red}{\textbf{-0.0078}} & \textcolor{blue}{\textbf{-1.7187}} & \textbf{1.0035} & \textcolor{red}{\textbf{0.9998}} & \textcolor{blue}{\textbf{1.1134}} \\
+ & Text & -0.2177 & -0.7891 & -1.1788 & 1.0118 & 1.0116 & 1.1135 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

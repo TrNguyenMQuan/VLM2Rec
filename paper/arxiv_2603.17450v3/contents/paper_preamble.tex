@@ -1,0 +1,32 @@
+% Packages and macros used only by this manuscript.
+% acmart already loads graphicx, booktabs, amsmath, amsthm, and natbib.
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Keep float-only pages aligned with the top of the text area.
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@dblfptop}{0pt}
+\makeatother
+
+% Avoid missing text-mode check marks with the ACM Unicode math font.
+\newcommand{\cmark}{\ding{51}}
+
+\definecolor{headercolor}{gray}{0.94}
+\definecolor{bestcolor}{RGB}{221,235,247}
+\definecolor{secondcolor}{RGB}{252,228,214}
+\newcommand{\bestscore}[1]{\cellcolor{bestcolor}{\textbf{#1}}}
+\newcommand{\secondscore}[1]{\cellcolor{secondcolor}{\underline{#1}}}
+
+% Modality-dropout evaluation settings: history items use text-only (TEXT),
+% vision-only (VISION), or fused (FUSION) item embeddings; the next item is always fused.
+\newcommand{\TEXTset}{\texttt{TEXT}}
+\newcommand{\VISIONset}{\texttt{VISION}}
+\newcommand{\FUSIONset}{\texttt{FUSION}}
+
+

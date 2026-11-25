@@ -1,0 +1,92 @@
+% !LW recipe = WWW 2027 (Tectonic)
+% WWW 2027 research-track submission:
+% https://www2027.thewebconf.org/research-track-papers/
+\documentclass[sigconf]{acmart}
+% \documentclass[sigconf,anonymous,review]{acmart}
+
+\acmConference[WWW '27]{The ACM Web Conference 2027}{May 10--14, 2027}{Dublin, Ireland}
+\acmYear{2027}
+\copyrightyear{2027}
+
+\input{contents/paper_preamble}
+
+\title{VLM2Rec: Resolving Modality Collapse in Vision-Language Models for Sequential Recommendation}
+
+% Retained for the eventual camera-ready version; hidden by anonymous mode.
+\author{Junyoung Kim}
+\email{junyoungkim@postech.ac.kr}
+\affiliation{%
+  \institution{Pohang University of \\ Science and Technology}
+  \city{Pohang}
+  \country{Republic of Korea}
+}
+\author{Woojoo Kim}
+\email{kimuj0103@postech.ac.kr}
+\affiliation{%
+  \institution{Pohang University of \\ Science and Technology}
+  \city{Pohang}
+  \country{Republic of Korea}
+}
+\author{Jaehyung Lim}
+\email{jaehyunglim@postech.ac.kr}
+\affiliation{%
+  \institution{Pohang University of \\ Science and Technology}
+  \city{Pohang}
+  \country{Republic of Korea}
+}
+\author{Dongha Kim}
+\email{dhkim0317@postech.ac.kr}
+\affiliation{%
+  \institution{Pohang University of \\ Science and Technology}
+  \city{Pohang}
+  \country{Republic of Korea}
+}
+\author{Wonbin Kweon}
+\email{wonbinkweon@skku.edu}
+\authornote{Corresponding authors.}
+\affiliation{%
+  \institution{Sungkyunkwan University}
+  \city{Suwon}
+  \country{Republic of Korea}
+}
+\author{Hwanjo Yu}
+\email{hwanjoyu@postech.ac.kr}
+\authornotemark[1]
+\affiliation{%
+  \institution{Pohang University of \\ Science and Technology}
+  \city{Pohang}
+  \country{Republic of Korea}
+}
+
+\begin{document}
+
+\input{contents/0_Abstract}
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10002951.10003317.10003347.10003350</concept_id>
+       <concept_desc>Information systems~Recommender systems</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Information systems~Recommender systems}
+\keywords{Vision-Language Models, Modality Collapse, Sequential Recommendation}
+\maketitle
+
+\input{contents/1_Introduction}
+\input{contents/2_Framework}
+\input{contents/3_Paradox_of_SFT}
+\input{contents/4_VLM2Rec}
+\input{contents/5_Experiments}
+\input{contents/6_Conclusion}
+% \clearpage % 제출 때 지우기
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{reference}
+
+% \clearpage % 제출 때 지우기
+\appendix
+\input{contents/Appendix}
+
+\end{document}

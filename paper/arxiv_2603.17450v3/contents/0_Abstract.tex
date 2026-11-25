@@ -1,0 +1,14 @@
+% !TeX root = ../main.tex
+\begin{abstract}
+\label{abstract}
+Sequential Recommendation (SR) learns sequence-level Collaborative Filtering (CF) from interactions, but ID-based models struggle with sparse data and cold-start items.
+In contrast, item titles and images can reveal preference continuity, such as a recurring color or style.
+Yet existing approaches miss visual continuity: small encoders take a single item as input, and Large Language Models (LLMs) read only titles.
+We therefore shift our focus to Large Vision-Language Models (VLMs), which can read a user's entire image sequence, not just its titles.
+However, VLMs inherently suffer from \textbf{modality collapse}: they over-rely on text and, as a result, overlook visual continuity for recommendation.
+We find that standard contrastive Supervised Fine-Tuning (SFT), essential for adapting VLMs to SR, further amplifies this collapse: updates follow the text gradient, visual discrimination weakens, and adding image embeddings to the text embeddings consistently lowers accuracy.
+We propose \textbf{VLM2Rec} with two objectives: \textit{Weak-modality Penalized Contrastive Learning} strengthens each user's weaker modality, and \textit{Cross-modal Relational Topology Regularization} aligns each user's relative similarity structure over the same items across the two modality spaces.
+Its variant, $\text{VLM2Rec}_{\text{plug}}$, reuses the learned item embeddings in SR backbones and thus serves at the latency of conventional SR models.
+Experiments show that VLM2Rec mitigates the collapse and consistently improves accuracy and robustness.
+% Our code is available at {\color{blue}\url{https://anonymous.4open.science/r/VLM2Rec/}}.
+\end{abstract}

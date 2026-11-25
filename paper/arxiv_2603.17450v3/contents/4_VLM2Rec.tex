@@ -1,0 +1,174 @@
+% !TeX root = ../main.tex
+
+
+\section{Proposed Method: VLM2Rec}
+\label{sec:methods}
+
+To address the SFT-amplified modality collapse (Sec.~\ref{sec:empirical}), we propose \textbf{VLM2Rec} (Fig.~\ref{fig:method}), which trains a VLM with two objectives, without changing its architecture, to recommend the next item by sequence--item similarity.
+We follow the modality embedding setting of Sec.~\ref{sec:prompt_templates}.
+$\mathcal{L}_{\text{WPCL}}$ strengthens each user's weaker modality (Sec.~\ref{sec:wpcl}), and $\mathcal{L}_{\text{CRTR}}$ softly aligns each user's relative similarity structure over the same items in the text and vision spaces (Sec.~\ref{sec:crtr}); the final objective combines them (Sec.~\ref{sec:final_objective}).
+We also propose $\text{VLM2Rec}_{\text{plug}}$ for efficient serving; it transfers the trained item embeddings to SR backbones such as SASRec~\cite{sasrec}, so its latency matches that of conventional SR models (Sec.~\ref{sec:deployment}).
+
+\subsection{Weak-modality Penalized Contrastive Learning}
+\label{sec:wpcl}
+We propose \textit{Weak-modality Penalized Contrastive Learning} ($\mathcal{L}_{\text{WPCL}}$), which multiplies each user's negative term in $\mathcal{L}_{\text{SFT}}$ (Eq.~\ref{eq:sft_loss}) by a penalty weight that grows as the user's weaker modality lags behind the stronger one.
+% It targets the imbalance in Sec.~\ref{sec:empirical}: SFT reduces the loss mainly through the strong modality as a shortcut (A2) and leaves the weak modality barely separating next items from negatives (A3).
+$\mathcal{L}_{\text{WPCL}}$ targets the imbalance in Sec.~\ref{sec:empirical}: SFT reduces the loss mainly through the strong modality as a shortcut (A2), so the weak modality barely separates next items from negatives (A3).
+
+\subsubsection{\textbf{User-adaptive Modality Gap Estimation}}
+We first measure how clearly each modality separates a user's next item from negatives, as a per-user counterpart of the separability $S^m$ (Sec.~\ref{sec:empirical}).
+For user $u$ and modality $m\in\{T, V\}$, the \textit{Discriminative Margin} $\mathcal{M}_{u,m}$ is the similarity of the sequence embedding $\mathbf{e}_u^m$ to the next item minus the mean similarity to the negatives $i^-\in\mathcal{N}_u$:
+\begin{equation}
+    \mathcal{M}_{u,m} = \text{s}(\mathbf{e}^m_u, \mathbf{e}^m_{i^+}) - \frac{1}{|\mathcal{N}_u|} \sum_{i^- \in \mathcal{N}_u} \text{s}(\mathbf{e}^m_u, \mathbf{e}^m_{i^-}),
+\end{equation}
+where $\mathcal{N}_u$ holds the next items of the other users in the batch (Sec.~\ref{sec:exp_setup}).
+% A larger $\mathcal{M}_{u,m}$, a per-user counterpart of the separability $S^m$ (Sec.~\ref{sec:empirical}), means that modality $m$ separates $u$'s next item more clearly.
+At each training step, user $u$'s strong and weak modalities are those with the larger and smaller margins:
+\begin{equation}
+    \mathcal{M}_{u,\text{strong}} = \max_{m}(\mathcal{M}_{u,m}), \quad \mathcal{M}_{u,\text{weak}} = \min_{m}(\mathcal{M}_{u,m}).
+\end{equation}
+We identify the weak modality per user because it varies across users (App.~\ref{app:anchor_weak_split}).
+$\mathcal{L}_{\text{WPCL}}$ can thus strengthen text for some users and vision for others, unlike gradient modulation methods~\cite{modality_balancing_OGM-GE_1, modality_balancing_AGM_2} based on statistics aggregated over samples (Sec.~\ref{sec:related}).
+
+We define the \textit{Modality Gap} $\Delta_{u,\mathrm{gap}}$ as the difference between these margins:
+\begin{equation}
+    \Delta_{u,\mathrm{gap}} = \mathrm{sg}[\mathcal{M}_{u,\text{strong}}] - \mathcal{M}_{u,\text{weak}},
+    \label{eq:modality_gap}
+\end{equation}
+where $\mathrm{sg}[\cdot]$ is the stop-gradient operator.
+It treats $\mathcal{M}_{u,\text{strong}}$ as a fixed target inside $\Delta_{u,\mathrm{gap}}$ only, so the penalty below can shrink the gap by raising $\mathcal{M}_{u,\text{weak}}$, not by lowering $\mathcal{M}_{u,\text{strong}}$.
+
+
+
+\subsubsection{\textbf{Dynamic Penalty from Modality Gap}}
+We convert $\Delta_{u,\mathrm{gap}}$ into a penalty weight $w_{u,\text{pen}}$:
+\begin{equation}
+\label{eq:wpen}
+w_{u,\text{pen}}
+=
+1+\mathrm{Softplus}(\Delta_{u,\mathrm{gap}}),
+\end{equation}
+Since Softplus is positive and increasing, $w_{u,\text{pen}}>1$ and increases monotonically with $\Delta_{u,\mathrm{gap}}$.
+Multiplying each user's negative term in Eq.~\ref{eq:sft_loss} by $w_{u,\text{pen}}$ gives
+\begin{equation}
+\label{eq:wpcl}
+    \mathcal{L}_{\text{WPCL}} = -\mathop{\mathbb{E}}\limits_{u \in \mathcal{B}} \log \frac{e^{\text{s}(\mathbf{e}_u, \mathbf{e}_{i^+}) / \tau_{\text{WPCL}}}}{e^{\text{s}(\mathbf{e}_u, \mathbf{e}_{i^+}) / \tau_{\text{WPCL}}} + w_{u,\text{pen}} \sum_{i^- \in \mathcal{N}_u} e^{\text{s}(\mathbf{e}_u, \mathbf{e}_{i^-}) / \tau_{\text{WPCL}}}},
+\end{equation}
+\noindent where $\tau_{\text{WPCL}}$ is the temperature.
+% Minimizing Eq.~\ref{eq:wpcl} also shrinks $\Delta_{u,\mathrm{gap}}$ by raising $\mathcal{M}_{u,\text{weak}}$, because $w_{u,\text{pen}}$ is not detached (Sec.~\ref{sec:wpcl_theory}).
+Minimizing Eq.~\ref{eq:wpcl} also shrinks $\Delta_{u,\mathrm{gap}}$ by raising $\mathcal{M}_{u,\text{weak}}$, because $w_{u,\text{pen}}$ is not detached.
+
+
+% Theoretical analysis removed from the paper (2026-10-26; kept for reference).
+% \subsubsection{\textbf{Theoretical Analysis}}
+% \label{sec:wpcl_theory}
+% Through $w_{u,\text{pen}}$, $\mathcal{L}_{\text{WPCL}}$ raises the weak modality's margin and holds users with larger modality gaps to a higher standard, a wider score margin at the same loss (Proposition~\ref{prop:wpcl}; proof in Appendix~\ref{app:proof_wpcl}).
+
+% \begin{proposition}[Weak-modality correction and margin offset]
+% \label{prop:wpcl}
+% Fix the strong/weak assignment, and differentiate the per-user term $\ell_u$ of Eq.~\ref{eq:wpcl} with respect to the VLM/LoRA parameters $\theta$.
+% % (i) Split $\nabla_\theta\ell_u$ into the part with $w_{u,\text{pen}}$ held fixed and the part through $w_{u,\text{pen}}$, denoted $\nabla_\theta\ell_u^{\mathrm{gap}}$. The latter satisfies
+% (i) The part of $\nabla_\theta\ell_u$ that flows through $w_{u,\text{pen}}$, denoted $\nabla_\theta\ell_u^{\mathrm{gap}}$, satisfies
+% \begin{equation}
+% \nabla_\theta \ell_u^{\mathrm{gap}} = -\gamma_u \nabla_\theta \mathcal{M}_{u,\text{weak}}, \qquad \gamma_u>0,
+% \label{eq:wpcl_gradient_theory}
+% \end{equation}
+% so $-\nabla_\theta\ell_u^{\mathrm{gap}}$ is an ascent direction for $\mathcal{M}_{u,\text{weak}}$ whenever $\nabla_\theta\mathcal{M}_{u,\text{weak}}\neq\mathbf{0}$.
+% (ii) Let $s_u^+=\tau_{\text{WPCL}}\log A_u$ and $r_u^-=\tau_{\text{WPCL}}\log B_u$, where $A_u$ and $B_u$ are the positive and summed negative exponentials in Eq.~\ref{eq:wpcl}. 
+% To reach any fixed loss value, $\ell_u$ needs a score margin $s_u^+-r_u^-$ larger by $\tau_{\text{WPCL}}\log w_{u,\text{pen}}$ than $\mathcal{L}_{\text{SFT}}$ ($w_{u,\text{pen}}=1$) needs, and this offset increases with $\Delta_{u,\mathrm{gap}}$.
+% \end{proposition}
+% \noindent The gradient through $w_{u,\text{pen}}$ pushes the weak modality's positive score up and its negative scores down (Proposition~\ref{prop:wpcl}(i)): with $s_{u,j}^{w}=\text{s}(\mathbf e_u^{\mathrm{weak}},\mathbf e_j^{\mathrm{weak}})$ computed in $u$'s weak modality,
+% \begin{equation}
+% \frac{\partial\ell_u^{\mathrm{gap}}}{\partial s_{u,i^+}^{w}}=-\gamma_u,\quad
+% \frac{\partial\ell_u^{\mathrm{gap}}}{\partial s_{u,i^-}^{w}}=\frac{\gamma_u}{|\mathcal N_u|},\; i^-\in\mathcal N_u.
+% \label{eq:wpcl_score_gradient}
+% \end{equation}
+
+% \subsection{Training Objectives}
+
+\subsection{Cross-modal Relational Topology Regularization}
+\label{sec:crtr}
+
+While $\mathcal{L}_{\text{WPCL}}$ strengthens the weak modality's discrimination, it does not relate the two modalities' similarity structures.
+To satisfy the cross-modal consistency that multimodal SR also requires, we introduce \textit{Cross-modal Relational Topology Regularization} ($\mathcal{L}_{\text{CRTR}}$).
+It softly aligns each user's relative similarity structure over the same items in the two modality spaces, so that fusing them improves recommendation.
+Unlike direct alignment of $\mathbf{e}_u^T$ with $\mathbf{e}_u^V$, it does not require identical text and vision embeddings (Fig.~\ref{fig:method}).
+$\mathcal{L}_{\text{WPCL}}$, which scores the summed embeddings, keeps the two spaces compatible for fusion, since $\mathcal{L}_{\text{CRTR}}$ ignores how they are oriented.
+
+\subsubsection{\textbf{Modality-specific Relational Distribution}}
+For user $u$, we define the modality-specific relational distribution $\mathbf{P}^m_u \in \mathbb{R}^{|\mathcal{C}|}$ over the candidate items $\mathcal{C}$, where each entry $\mathbf{P}_{u,j}^m$ is the softmax-normalized similarity between the sequence representation $\mathbf{e}_u^m$ of user $u$ and the candidate item embedding $\mathbf{e}_j^m$ of item $j$:
+\begin{equation}
+    \mathbf{P}_{u,j}^m = \frac{e^{\text{s}(\mathbf{e}_u^m, \mathbf{e}_j^m) / \tau_{\text{CRTR}}}}{\sum_{k\in\mathcal{C}} e^{\text{s}(\mathbf{e}_u^m, \mathbf{e}_k^m) / \tau_{\text{CRTR}}}},
+\end{equation}
+where $\tau_{\text{CRTR}}$ is a temperature parameter.
+$\mathbf{P}_u^m$ captures the neighborhood of user $u$'s history among the candidate items in the modality-specific representation space.
+
+\subsubsection{\textbf{Bidirectional Relational Consistency}}
+For each user $u$, we then align the two neighborhoods $\mathbf{P}^T_u$ and $\mathbf{P}^V_u$ by minimizing their bidirectional Kullback--Leibler (KL) divergence:
+\begin{equation}
+\mathcal{L}_{\text{CRTR}} = \frac{1}{2}\mathop{\mathbb{E}}\limits_{u \in \mathcal{B}} \left( \mathrm{KL}(\mathbf{P}_u^T \| \mathbf{P}_u^V) + \mathrm{KL}(\mathbf{P}_u^V \| \mathbf{P}_u^T) \right).
+\end{equation}
+The bidirectional form pulls each modality's neighborhood toward the other's, rather than using the dominant modality as a fixed target.
+
+% Theoretical analysis removed from the paper (2026-10-26; kept for reference).
+% \subsubsection{\textbf{Theoretical Analysis}}
+% \label{sec:crtr_theory}
+% $\mathcal{L}_{\text{CRTR}}$ aligns each user's relative similarity structure in the two modality spaces \textbf{without forcing the text and vision embeddings to coincide} (Proposition~\ref{prop:crtr}; proof in Appendix~\ref{app:proof_crtr}).
+
+% \begin{proposition}[Relational alignment without equal embeddings]
+% \label{prop:crtr}
+% Let both modalities compute $\mathbf P^m_u$ over a finite, nonempty item set $\mathcal{C}$ with the same $\tau_{\text{CRTR}}$ and cosine similarity $s^m_{u,j}=\text{s}(\mathbf e^m_u,\mathbf e^m_j)$. Let $D_u$ be the sum of the two KL terms of user $u$ in $\mathcal{L}_{\text{CRTR}}$.
+% (i) $D_u=0$ if and only if $s^T_{u,j}-s^T_{u,k}=s^V_{u,j}-s^V_{u,k}$ for all $j,k\in\mathcal{C}$.
+% (ii) $D_u$ is unchanged when one orthogonal map is applied to all embeddings of a modality (sequences and items), with independent maps for text and vision; hence $D_u=0$ does not require $\mathbf e^T_u=\mathbf e^V_u$.
+% (iii) $\|\mathbf P_u^T-\mathbf P_u^V\|_1\le\sqrt{D_u}$.
+% \end{proposition}
+
+% \noindent By (iii), a small $D_u$ keeps the two neighborhoods close, but only among the in-batch candidates $\mathcal{C}$, not over the whole item set $\mathcal{I}$.
+
+\subsection{Final Objective}
+\label{sec:final_objective}
+The final objective function $\mathcal{L}$ is defined as follows:
+\begin{equation}
+\mathcal{L} = \mathcal{L}_{\text{WPCL}} + \lambda \cdot \mathcal{L}_{\text{CRTR}},
+\end{equation}
+% where $\lambda$ balances discrimination and structural consistency.
+where $\lambda$ balances discrimination and cross-modal consistency.
+After training, VLM2Rec encodes a user's history into the fused sequence embedding $\mathbf{e}_u$ and directly ranks items by $\text{s}(\mathbf{e}_u,\mathbf{e}_i)$.
+
+\begin{algorithm}[!h]
+\caption{Training and inference of VLM2Rec and $\text{VLM2Rec}_{\text{plug}}$}
+\label{alg:vlm2rec_pipeline}
+\small
+\begin{algorithmic}[1]
+\Require Sequence--target pairs $(S_u,i^+)$, item catalog $\mathcal I$, VLM $\Phi$
+\For{each minibatch $\mathcal B$ during training}
+    \State Encode histories and targets with $P_T,P_V$; normalize last-token states and sum modalities.
+    \State Compute per-modality margins; identify weak/strong, then $\Delta_{u,\mathrm{gap}}$ and $w_{u,\text{pen}}$ (Eqs.~\ref{eq:modality_gap} and~\ref{eq:wpen}).
+    \State Compute $\mathcal L_{\text{WPCL}}$ (Eq.~\ref{eq:wpcl}) and $\mathcal L_{\text{CRTR}}$ from $\mathbf P_u^T$ and $\mathbf P_u^V$.
+    \State Update VLM LoRA with $\mathcal L_{\text{WPCL}}+\lambda\mathcal L_{\text{CRTR}}$.
+\EndFor
+\State \textbf{Precompute:} Encode each item once into the fused item table $\mathbf E$.
+\State \textbf{VLM2Rec:} At each request, encode the history with $\Phi$; rank items by $\text{s}(\mathbf e_u,\mathbf e_i)$ over $\mathbf E$.
+\State \textbf{$\text{VLM2Rec}_{\text{plug}}$ (offline):} Replace the item embedding table of an SR backbone $f_\psi$ with the frozen $\mathbf E$ through $\mathbf W$; train only $\mathbf W$ and $\psi$.
+\State \textbf{$\text{VLM2Rec}_{\text{plug}}$ (online):} Rank items with the trained SR backbone on $\mathbf E$, without VLM calls.
+\end{algorithmic}
+\end{algorithm}
+
+\input{tables/perf_task2}
+
+\subsection{$\text{VLM2Rec}_{\text{plug}}$: Plugging into SR Backbones}
+\label{sec:deployment}
+VLM2Rec runs the VLM on each user's latest history at every request, which is far heavier than a typical SR model.
+% Item embeddings, however, depend only on the items and can be computed once offline.
+However, item embeddings depend only on the items and can be computed once offline.
+% In this setting, we encode every item once into a frozen item table $\mathbf{E}=\{\mathbf{e}_i\}_{i\in\mathcal{I}}$ with the trained VLM2Rec model.
+We therefore propose the $\text{VLM2Rec}_{\text{plug}}$ setting, in which we encode every item with the trained VLM2Rec model into a frozen item table $\mathbf{E}=\{\mathbf{e}_i\}_{i\in\mathcal{I}}$ (Fig.~\ref{fig:method}).
+$\mathbf{E}$ inherits the sequence-aware knowledge that the model learned by reasoning over multimodal histories, even though each item is encoded alone.
+This table then replaces the item embedding table of an SR backbone $f_\psi$ through a linear adapter $\mathbf{W}$:
+\begin{equation}
+\hat{y}_{u,i}=f_\psi(\mathbf{W}\mathbf{e}_{i_1},\dots,\mathbf{W}\mathbf{e}_{i_L})^{\top}\mathbf{W}\mathbf{e}_i.
+\label{eq:sr_score}
+\end{equation}
+Only $\mathbf{W}$ and $\psi$ are trained with the backbone's loss, so the backbone learns item transitions on embeddings that already carry multimodal semantics and sequence-level CF.
+The serving latency matches that of the SR backbone alone, because $\mathbf{E}$ is precomputed and no VLM runs per request.
+Algorithm~\ref{alg:vlm2rec_pipeline} summarizes training and inference of both settings.

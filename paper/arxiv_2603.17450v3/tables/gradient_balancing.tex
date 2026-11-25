@@ -1,0 +1,27 @@
+% !TeX root = ../main.tex
+\begin{table}[!t]
+\centering
+\caption{Generic gradient modulation vs. $\mathcal{L}_{\text{WPCL}}$ in the $\text{VLM2Rec}_{\text{plug}}$ setting (SASRec, N@20).}
+\vspace{-0.2cm}
+\label{tab:gradient_balancing}
+% \footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{0.7}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Dataset} & \textbf{Method} & \textbf{\TEXTset} & \textbf{\VISIONset} & \textbf{\FUSIONset} & \textbf{Gap} (\%) \\
+\midrule
+\multirow{4}{*}{Beauty}
+ & $\text{VLM}_{\text{SFT}}$   & 0.0650 & 0.0587 & 0.0622 & 10.7 \\
+ & OGM-GE~\cite{modality_balancing_OGM-GE_1}    & 0.0677 & 0.0616 & 0.0632 & 9.9 \\
+ & AGM~\cite{modality_balancing_AGM_2}       & 0.0664 & 0.0605 & 0.0648 & 9.8 \\
+ & $\mathcal{L}_{\text{WPCL}}$ only & 0.0667 & 0.0638 & 0.0673 & 4.5 \\
+\midrule
+\multirow{4}{*}{MovieLens}
+ & $\text{VLM}_{\text{SFT}}$   & 0.1100 & 0.0953 & 0.1082 & 15.4 \\
+ & OGM-GE~\cite{modality_balancing_OGM-GE_1}    & 0.1087 & 0.0965 & 0.1068 & 12.6 \\
+ & AGM~\cite{modality_balancing_AGM_2}       & 0.1120 & 0.1008 & 0.1108 & 11.1 \\
+ & $\mathcal{L}_{\text{WPCL}}$ only & 0.1136 & 0.1108 & 0.1148 & 2.5 \\
+\bottomrule
+\end{tabular}
+\end{table}

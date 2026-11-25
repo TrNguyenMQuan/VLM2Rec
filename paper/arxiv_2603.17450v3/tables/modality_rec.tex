@@ -1,0 +1,38 @@
+% !TeX root = ../main.tex
+\begin{table}[!t]
+
+\centering
+\caption{Modality embedding replacement experiments on state-of-the-art models. \protect\colorbox{bestcolor}{\textbf{Bold}}/\protect\colorbox{secondcolor}{\underline{underline}}: best/second best.}
+
+\label{tab:modality_rec}
+\resizebox{\linewidth}{!}{
+    \renewcommand{\arraystretch}{0.7}
+    \begin{tabular}{lcccc}
+    \toprule
+    \multirow{2}{*}{\textbf{Embedding}}
+    & \multicolumn{2}{c}{\textbf{UniSRec}~\cite{modrec_unisrec}}
+    & \multicolumn{2}{c}{\textbf{TedRec}~\cite{modrec_tedrec}} \\
+    \cmidrule(lr){2-3} \cmidrule(lr){4-5}
+    & Clothing & MovieLens & Clothing & MovieLens \\
+    \midrule
+    BERT                              & 0.0308               & 0.1086               & 0.0332               & 0.1167               \\
+    $\text{LLM}_{\text{SFT}}$         & 0.0325               & 0.1119               & 0.0348               & 0.1180               \\
+    $\text{VLM}_{\text{SFT}}$ (Text)  & \secondscore{0.0328} & 0.1124               & \secondscore{0.0355} & \secondscore{0.1189} \\
+    I-LLMRec (Text)                   & 0.0318               & \secondscore{0.1128} & \secondscore{0.0355} & 0.1184               \\
+    \textbf{$\text{VLM2Rec}_{\text{plug}}$ (Text)}        & \bestscore{0.0336}   & \bestscore{0.1137}   & \bestscore{0.0362}   & \bestscore{0.1208}   \\
+    \midrule
+    \multirow{2}{*}{\textbf{Embedding}}
+    & \multicolumn{2}{c}{\textbf{M3SRec}~\cite{modrec_m3srec}}
+    & \multicolumn{2}{c}{\textbf{HM4SR}~\cite{modrec_hm4sr}} \\
+    \cmidrule(lr){2-3} \cmidrule(lr){4-5}
+    & Clothing & MovieLens & Clothing & MovieLens \\
+    \midrule
+    CLIP                      & 0.0322               & 0.1134               & 0.0277               & 0.1219               \\
+    $\text{VLM}_{\text{SFT}}$ & 0.0338               & 0.1158               & 0.0328               & \secondscore{0.1261} \\
+    I-LLMRec                  & \secondscore{0.0347} & \secondscore{0.1165} & \secondscore{0.0345} & 0.1259               \\
+    \textbf{$\text{VLM2Rec}_{\text{plug}}$}       & \bestscore{0.0352}   & \bestscore{0.1176}   & \bestscore{0.0396}   & \bestscore{0.1315}   \\
+    \bottomrule
+    \end{tabular}
+    }
+
+\end{table}

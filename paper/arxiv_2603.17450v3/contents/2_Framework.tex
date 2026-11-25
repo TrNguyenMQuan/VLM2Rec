@@ -1,0 +1,55 @@
+\section{Related Work}
+\label{sec:related}
+\noindent\textbf{LLMs for SR.}
+LLMs were first applied to recommendation as recommenders that generate the next item or predict user preference from a textual history~\cite{p5,tallrec}.
+LLM embedders for SR encode items and histories into embeddings, moving the modeling of item transitions from the SR backbone into the encoder and building on LLMs' strength as text embedders~\cite{llmret2}.
+Multimodal SR instead leaves these transitions to the backbone, feeding it item features from small pretrained encoders such as BERT~\cite{bert} and CLIP~\cite{clip} that are usually frozen and see one item at a time: MoRec~\cite{mmrec1} replaces item IDs with these features, while M3SRec~\cite{modrec_m3srec} and HM4SR~\cite{modrec_hm4sr} fuse them with ID embeddings through mixture-of-experts layers.
+To inject sequence-level CF into the encoder, LLMEmb~\cite{llmemb} distills ID embeddings into an LLM, SLIM~\cite{slim} distills ChatGPT's reasoning over user behavior sequences into a student LLM, and LLM2Rec~\cite{llm2rec} fine-tunes the LLM to predict the next item from interaction sequences before embedding training.
+I-LLMRec~\cite{illmrec} extends this line to images by feeding each history item's CLIP feature into a text-only LLM as a token, which the LLM interprets within its text space.
+
+\vspace{+0.1cm}
+\noindent\textbf{VLMs for SR.}
+VLMs such as Qwen2.5-VL~\cite{qwen2.5-vl}, LLaVA~\cite{llava}, and InternVL3~\cite{internvl3} can read the raw images of an entire history in one context, rather than relying on item-wise CLIP features as multimodal SR and I-LLMRec do.
+One line of work uses VLMs as sequential recommenders: MLLM-MSR~\cite{mllmmsr} and HaNoRec~\cite{hanorec} prompt a VLM with a user's history to score or rank candidate next items, so their cost grows with the number of candidates and limits them to small candidate sets.
+Another line of work uses VLMs as item encoders: $\text{VLM}_{\text{Prompt}}$~\cite{vlm_prompt} obtains item embeddings by zero-shot prompting a VLM, and NoteLLM-2~\cite{notellm2} fuses visual and textual features at the item level; both embed each item in isolation, without sequence-level CF.
+VLM2Rec follows this embedding paradigm but learns sequence-level CF by training the VLM to match each user's multimodal history with the next item.
+
+\vspace{+0.1cm}
+\noindent\textbf{Modality Imbalance.}
+Gradient modulation methods for multimodal classification, OGM-GE~\cite{modality_balancing_OGM-GE_1} and AGM~\cite{modality_balancing_AGM_2}, rebalance modalities from statistics aggregated over samples, so they cannot adapt to a weaker modality that varies across users' histories.
+VLM2Rec instead corrects each user's weaker modality, identified by how well each modality separates the next item from negatives.
+Uni-modal auxiliary losses~\cite{modality_gap_gen1} and sample-level modality valuation~\cite{modality_balancing_sample_3} also counter greedy multimodal learning~\cite{modality_gap_gen3}, but for classification.
+Relational knowledge distillation~\cite{rkd} and mutual learning~\cite{dml} match similarity distributions across networks, whereas VLM2Rec matches them across the two modalities of one model.
+
+\definecolor{textblue}{HTML}{D1F2EB}
+\definecolor{imgorange}{HTML}{FDEBD0}
+\newcommand{\texttoken}[1]{%
+  \begingroup\setlength{\fboxsep}{1.5pt}\colorbox{textblue}{\vphantom{Ag}#1}\endgroup%
+}
+\newcommand{\imgtoken}[1]{%
+  \begingroup\setlength{\fboxsep}{1.5pt}\colorbox{imgorange}{\vphantom{Ag}#1}\endgroup%
+}
+
+\section{Problem Formulation}
+\label{sec:pre}
+
+% \noindent\textbf{SR with VLM Embeddings.}
+Given the set of all items $\mathcal{I}$ and a user's history $S_u=[i_1,\dots,i_L]$, where each item has a title and an image, SR predicts the next item $i^+$.
+A VLM $\Phi$ encodes the history into a sequence embedding and each item into an item embedding, taking the $\ell_2$-normalized last-token hidden state of its final layer (Fig.~\ref{fig:method}):
+\begin{equation}
+\mathbf{e}_u=\Phi(S_u),\qquad \mathbf{e}_i=\Phi(i).
+\label{eq:vlm_embed}
+\end{equation}
+% These embeddings serve SR either by directly ranking items based on embedding similarity (e.g., $\mathbf{e}_u ^ \top \mathbf{e}_i$) or by serving as item features for an existing SR model (e.g., SASRec) (Sec.~\ref{sec:deployment}).
+% These embeddings serve SR either by ranking items directly or as item features of an SR model (Sec.~\ref{sec:deployment}).
+These embeddings serve SR in two ways: ranking all items in $\mathcal{I}$ by the cosine similarity between $\mathbf{e}_u$ and $\mathbf{e}_i$, or replacing the item embedding table of an SR backbone such as SASRec~\cite{sasrec} (Sec.~\ref{sec:deployment}).
+
+\vspace{+0.1cm}
+\label{sec:pre_sft}
+To turn the generative VLM into an embedder and inject sequence-level CF, we apply standard contrastive Supervised Fine-Tuning (SFT)~\cite{infonce1}.
+It pulls each sequence embedding $\mathbf{e}_u$ toward its next-item embedding $\mathbf{e}_{i^+}$ and away from negatives:
+\begin{equation}
+\mathcal{L}_{\text{SFT}} = - \mathop{\mathbb{E}}\limits_{u \in \mathcal{B}} \log\frac{e^{\text{s}(\mathbf{e}_u, \mathbf{e}_{i^+}) / \tau}}{e^{\text{s}(\mathbf{e}_u, \mathbf{e}_{i^+}) / \tau} + \sum_{i^- \in \mathcal{N}_u} e^{\text{s}(\mathbf{e}_u, \mathbf{e}_{i^-}) / \tau}},
+\label{eq:sft_loss}
+\end{equation}
+where $\mathcal{B}$ is the batch, $\text{s}(\cdot,\cdot)$ is cosine similarity, $\tau$ is the temperature, and $\mathcal{N}_u$ is the negative item set of user $u$.

@@ -1,0 +1,30 @@
+# Python / tooling
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# Data, models, outputs (large)
+data/
+artifacts/
+pretrained_vlm/
+wandb/
+runs/**/checkpoints/
+runs/**/embeddings/
+runs/**/*.pt
+runs/**/*.safetensors
+runs/**/*.npy
+*.pt
+*.safetensors
+*.ckpt
+
+# Secrets & local settings
+.env
+.env.*
+.claude/settings.local.json
+
+# OS
+.DS_Store
