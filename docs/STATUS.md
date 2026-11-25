@@ -1,26 +1,31 @@
 # STATUS — trạng thái hiện tại
 
-**Cập nhật lần cuối:** 2026-11-25 (session 1)
-**Phase hiện tại:** Phase 0 — chưa bắt đầu viết code. Đã xong khâu đọc paper và lập kế hoạch.
+**Cập nhật lần cuối:** 2026-11-25 (session 2)
+**Nhánh hiện tại:** `explore/official-code` (tách từ `main`) — chạy thử và đánh giá code chính thức trên Colab.
+**Phase:** 0.5 — Kiểm tra code chính thức (trước Phase 0 của bản tái hiện).
 
 ## Đã xong
-- Đọc toàn bộ paper v3 (TeX trong `paper/arxiv_2603.17450v3/`), tóm tắt công thức + mọi số mục tiêu vào `docs/PAPER_NOTES.md`.
-- Tìm và tải code chính thức (ẩn danh) → `third_party/vlm2rec_anon/`; phân tích khác biệt paper ↔ code vào `docs/REFERENCE_CODE_NOTES.md` (C1–C12).
-- Lập `PLAN.md`, `docs/DECISIONS.md` (D-01…D-22), `CLAUDE.md`, lệnh `/session-end`, `/log-run`.
-- Kiểm tra nguồn: Amazon 2014 5-core + meta theo ngành online; 25/25 URL ảnh mẫu OK sau khi đổi sang `m.media-amazon.com`; ML-1M online; Qwen2.5-VL-3B-Instruct không gated; tokenizer mặc định right padding.
+- Session 1: đọc paper, lấy code chính thức, lập `PLAN.md`, `docs/*` (xem SESSION_LOG).
+- Session 2: tạo nhánh `explore/official-code` với:
+  - `notebooks/official/01_official_data_prep_cpu.ipynb` (CPU) và `02_official_stage1_stage2_gpu.ipynb` (A100/L4).
+  - `tools/official/`: `prep_amazon.py`, `audit_probes.py`, `fullrank_eval.py`, `run_stage2.py`, `summarize.py`, `paper_targets.py`.
+  - `docs/official_code/GUIDE_COLAB.md` (hướng dẫn chạy) và `AUDIT.md` (khung đánh giá 3 lớp + bảng cần điền).
+  - Đã kiểm tra cục bộ: biên dịch OK; selftest xếp hạng khớp brute-force; parser tham số và log của Stage 2 OK; summarize OK trên dữ liệu giả. **Chưa chạy gì trên GPU.**
+  - Đã xác minh: cần `qwen-vl-utils==0.0.14` (bản 0.0.11 thiếu `image_patch_size`); ảnh 112×112 → 16 token.
 
 ## Việc tiếp theo (theo thứ tự)
-1. Chờ bạn trả lời các câu hỏi ở mục "Đang chờ".
-2. Phase 0: `git init` (nếu được đồng ý) → `uv` project Python 3.11 với các bản khoá → khung `src/vlm2rec/utils` → tải Qwen2.5-VL-3B-Instruct → smoke test MPS.
-3. Phase 1.1: tải raw Amazon (4 ngành, 5-core + meta) và ML-1M + links.csv.
+1. Bạn: `git push -u origin explore/official-code` (nếu repo private thì thêm secret `GITHUB_TOKEN` trên Colab).
+2. Bạn: chạy notebook 01 (CPU, Beauty) → notebook 02 Phần 0, A, B, C, D (A100/L4). Phần E (train đầy đủ) tuỳ ngân sách.
+3. Bạn: tải `audit_results/` từ Drive → `docs/official_code/results/` → commit.
+4. Claude: đọc kết quả → điền `AUDIT.md` mục 3–5 → cập nhật `DECISIONS.md` (D-01, D-08, D-09, có thể cả D-03/04/05) và `RESULTS.md`.
+5. Sau đó quay về `main` để bắt đầu Phase 0 của bản tái hiện (`PLAN.md`).
 
 ## Đang chờ từ bạn
-- TMDB API key (poster ML-1M) — D-14.
-- Chọn GPU cho Stage 1 (Colab Pro/Pro+ hay thuê RunPod/Vast) + ngân sách.
-- Đồng ý `git init` / tạo repo GitHub private?
-- Phạm vi: MVP (ML-1M + Beauty) hay đủ 5 dataset + Tier 2.
+- Kết quả chạy Colab (mục 2–3 ở trên).
+- (Vẫn mở từ session 1) TMDB API key; lựa chọn GPU và ngân sách; phạm vi (MVP hay đủ 5 dataset).
 
-## Quyết định đang mở quan trọng nhất
-- D-01 chế độ dữ liệu (`tail10` tạm chọn) → kiểm chứng ở Phase 2 bằng SASRec ID-only.
-- D-04/D-05 variant loss (`code` tạm chọn) → kiểm chứng ở Phase 4 trên Beauty/ML.
-- D-09 bảng item plug (`modality_only` tạm chọn) → kiểm chứng bằng VLM_Vanilla plug.
+## Quyết định sẽ được kiểm chứng bởi lần chạy này
+- D-01 chế độ dữ liệu (SASRec ID trên tail10 có khớp paper không).
+- D-08 giao thức eval Stage 1 (full ranking masked/unmasked vs sampled-100).
+- D-09 cách cắm bảng item ở plug (`modality_only` vs `concat`).
+- D-03/D-04/D-05 nếu chạy Phần E (train đầy đủ).

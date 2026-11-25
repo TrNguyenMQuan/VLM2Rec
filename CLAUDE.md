@@ -17,7 +17,8 @@ Re-implement arXiv:2603.17450v3 "VLM2Rec: Resolving Modality Collapse in Vision-
 3. `docs/DECISIONS.md` — how conflicts between 1 and 2 are resolved. Default rule P-1: follow the code, keep the paper version behind a `variant: code|paper` flag.
 
 ## Hard rules
-- `paper/` and `third_party/` are read-only references. Never import from, modify, or execute anything in `third_party/`. Re-implement in `src/vlm2rec/`; tests may transcribe reference formulas.
+- `paper/` and `third_party/` are read-only references. Never modify `third_party/`, and never import it from `src/vlm2rec/`; re-implement there (tests may transcribe reference formulas).
+- Exception (branch `explore/official-code`, user-approved 2026-11-25): the official code may be *run* to audit it, but only from a working copy outside the repo (Colab `/content/work/official`) via `tools/official/*` and `notebooks/official/*`. Do not run it on the Mac without asking.
 - No number goes into `docs/RESULTS.md` without a run dir `runs/<run_id>/` holding `config.yaml` + `metrics.json` + `env.json`. Paper numbers are labelled "paper".
 - Every knob where paper ≠ code is a config flag; record which value each run used.
 - Deterministic preprocessing (stable sorts, fixed seeds); log content hashes of processed data.
@@ -38,6 +39,7 @@ Re-implement arXiv:2603.17450v3 "VLM2Rec: Resolving Modality Collapse in Vision-
 - `PLAN.md` — phases, gates, experiment matrix, debug ladder.
 - `docs/` — STATUS, SESSION_LOG, DECISIONS, RESULTS, PAPER_NOTES, REFERENCE_CODE_NOTES.
 - `src/vlm2rec/{utils,data,stage1,stage2,eval,analysis}` — implementation (to be built).
+- `tools/official/`, `notebooks/official/`, `docs/official_code/{GUIDE_COLAB,AUDIT}.md` — audit of the official release on Colab (branch `explore/official-code`); results land in `docs/official_code/results/`.
 - `configs/`, `scripts/`, `tests/`, `notebooks/`, `docker/`.
 - `data/`, `artifacts/`, `runs/` — local outputs (mostly gitignored).
 

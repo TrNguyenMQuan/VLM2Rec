@@ -135,6 +135,13 @@ VLM2Rec/
 
 Mỗi phase có **Gate** (tiêu chí qua). Chưa qua gate thì không sang phase sau, trừ khi đã ghi rõ lý do trong `docs/DECISIONS.md`.
 
+### Phase 0.5 — Chạy thử & đánh giá code chính thức (Colab, nhánh `explore/official-code`)
+- [ ] Notebook 01 (CPU): tiền xử lý chính thức cho Beauty + thống kê Checkpoint A.
+- [ ] Notebook 02 (GPU): probe runtime, SASRec ID, VLM_Vanilla (full ranking + plug), smoke VLM2Rec; tuỳ chọn train đầy đủ.
+- [ ] Điền `docs/official_code/AUDIT.md`; cập nhật D-01 / D-08 / D-09 (và D-03/04/05 nếu đã train đầy đủ).
+
+Hướng dẫn: `docs/official_code/GUIDE_COLAB.md`. **Gate 0.5:** có `summary_Beauty.md` trong `docs/official_code/results/`, và AUDIT mục 5 đã được xác nhận bằng runtime.
+
 ### Phase 0 — Khởi tạo (Mac, ~0.5 ngày)
 - [ ] `git init` + `.gitignore` (đã có) + commit đầu tiên (cần bạn đồng ý).
 - [ ] `uv` project, Python 3.11, khoá phiên bản như §3.3; `ruff`, `pytest`.

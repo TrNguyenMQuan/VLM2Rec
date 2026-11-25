@@ -26,3 +26,20 @@ Mẫu cho mỗi mục:
 - **Run đã tạo:** chưa có.
 - **Quyết định:** tạo D-01…D-22 (phần lớn PROVISIONAL theo nguyên tắc P-1: theo code).
 - **Việc tiếp theo:** xem `docs/STATUS.md`.
+
+## Session 2 — 2026-11-25
+- **Mục tiêu:** bạn yêu cầu tách nhánh từ `main` để chạy thử code chính thức trên Google Colab, kèm hướng dẫn đánh giá code đó làm được gì và thiếu gì so với paper.
+- **Đã làm:**
+  - Tạo nhánh `explore/official-code` từ `main` (commit `1d165e6`).
+  - Viết 2 notebook Colab (CPU: tiền xử lý; GPU: probe → SASRec ID → VLM_Vanilla → smoke → full → tổng hợp).
+  - Viết `tools/official/*`: gọi lại hàm của tác giả từ bản copy làm việc; bổ sung đánh giá full ranking (code gốc chỉ có sampled-100), dropout test, geometry và probe runtime.
+  - Viết `docs/official_code/GUIDE_COLAB.md` và `AUDIT.md`.
+  - Cập nhật CLAUDE.md: ngoại lệ cho phép chạy code gốc trên nhánh này, chỉ qua bản copy và chỉ trên Colab.
+- **Phát hiện:**
+  - `qwen-vl-utils` phải đúng bản 0.0.14 (bản 0.0.11 không có `image_patch_size` → `utils.py` của tác giả sẽ lỗi).
+  - `requirements.txt` của tác giả thiếu `accelerate` (cần cho `device_map="auto"`) và không pin `pandas` (`groupby().apply(tail)` đổi hành vi ở pandas 3).
+  - `preprocess_data.py __main__` không tự tạo `raw/metadata.csv` (phải gọi `load_metadata_df` trước); tác giả dùng file metadata toàn bộ 3.36 GB → ta dùng `meta_<Category>.json.gz`.
+  - Trainer của tác giả không resume được, chỉ lưu checkpoint ở epoch 1 và epoch cuối.
+- **Run đã tạo:** chưa có (mới chỉ kiểm tra cục bộ: selftest xếp hạng OK).
+- **Quyết định:** không đổi; D-01, D-08, D-09 sẽ được kiểm chứng bởi lần chạy Colab.
+- **Việc tiếp theo:** xem `docs/STATUS.md`.
